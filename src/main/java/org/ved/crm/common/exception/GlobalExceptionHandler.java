@@ -21,5 +21,11 @@ public class GlobalExceptionHandler {
         return ApiResponse.failure("An unexpected error occurred");
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<Void> handleIllegalArgument(IllegalArgumentException ex) {
+        return ApiResponse.failure(ex.getMessage());
+    }
+
 
 }

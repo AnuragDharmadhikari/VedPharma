@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: VedPharm CRM
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/vedpharm
+    username: vedpharm_user
+    password: vedpharm_pass
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  docker:
+    compose:
+      lifecycle-management: start-and-stop
+
+server:
+  port: 8080

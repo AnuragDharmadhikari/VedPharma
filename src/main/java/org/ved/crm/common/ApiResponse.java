@@ -2,12 +2,14 @@ package org.ved.crm.common;
 
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 
 import java.time.Instant;
 
 @Getter
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonPropertyOrder({"success", "message", "data", "timestamp"})
 public class ApiResponse<T> {
 
     private final boolean success;

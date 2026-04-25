@@ -1,10 +1,11 @@
-package org.ved.crm.user;
+package org.ved.crm.doctor;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.ved.crm.common.audit.BaseAuditEntity;
+import org.ved.crm.territory.Territory;
 
 @Getter
 @Setter
@@ -12,35 +13,41 @@ import org.ved.crm.common.audit.BaseAuditEntity;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(
-        name = "users",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = "email", name = "uk_users_email")
-        }
-)
-public class User extends BaseAuditEntity {
+@Table(name = "doctors")
+public class Doctor extends BaseAuditEntity {
 
     @NotBlank
     @Column(nullable = false)
     private String fullName;
 
-    @Email
     @NotBlank
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
+    private String specialty;
+
+    private String hospitalName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DoctorTier tier;
+
+    private String phone;
+
+    @Email
     private String email;
 
     @NotBlank
     @Column(nullable = false)
-    private String passwordHash;
+    private String city;
 
-    @Enumerated(EnumType.STRING)
+    @NotBlank
     @Column(nullable = false)
-    private Role role;
-
-    private String phone;
+    private String state;
 
     @Builder.Default
     @Column(nullable = false)
     private boolean isActive = true;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "territory_id")
+    private Territory territory;
 }

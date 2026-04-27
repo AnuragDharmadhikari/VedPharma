@@ -1,5 +1,7 @@
 package org.ved.crm.common.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.ved.crm.common.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -51,5 +53,22 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> handleGenericException(Exception ex) {
         return ApiResponse.failure("An unexpected error occurred");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiResponse<Void> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex) {
+        return ApiResponse.failure(
+                "Operation violates a data constraint. " +
+                        "Possible duplicate entry or invalid reference.");
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex) {
+        return ApiResponse.failure(
+                "Invalid request format. Check enum values and data types.");
     }
 }

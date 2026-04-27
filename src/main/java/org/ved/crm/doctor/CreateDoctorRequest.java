@@ -12,7 +12,7 @@ public record CreateDoctorRequest(
         String hospitalName,
         @NotNull DoctorTier tier,
         String phone,
-        @Email @NotBlank String email,
+        @Email String email,
         @NotBlank String city,
         @NotBlank String state,
         UUID territoryId

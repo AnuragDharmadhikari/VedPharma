@@ -66,8 +66,8 @@ public class UserService {
             user.setPhone(request.phone());
         }
 
-        User saved = userRepository.save(user);
-        return userMapper.toDto(saved);
+        userRepository.save(user);
+        return userMapper.toDto(userRepository.findById(id).orElseThrow());
     }
 
     @Transactional

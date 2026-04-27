@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TerritoryService {
 
     private final TerritoryRepository territoryRepository;
@@ -29,15 +30,16 @@ public class TerritoryService {
     }
 
     @Transactional
-    public TerritoryDto createTerritory(CreateTerritoryRequest request){
+    public TerritoryDto createTerritory(CreateTerritoryRequest request) {
         Territory territory = Territory.builder()
                 .name(request.name())
                 .state(request.state())
                 .zone(request.zone())
                 .build();
 
-        Territory savedTerritory = territoryRepository.save(territory);
-        return territoryMapper.toDto(savedTerritory);
+        Territory saved = territoryRepository.save(territory);
+        return territoryMapper.toDto(
+                territoryRepository.findById(saved.getId()).orElseThrow());
     }
 
     @Transactional
@@ -54,14 +56,17 @@ public class TerritoryService {
             territory.setActive(request.isActive());
         }
 
-        Territory saved = territoryRepository.save(territory);
-        return territoryMapper.toDto(saved);
+        territoryRepository.save(territory);
+        return territoryMapper.toDto(
+                territoryRepository.findById(id).orElseThrow());
     }
 
     @Transactional
-    public void deactivateTerritory(UUID id){
+    public void deactivateTerritory(UUID id) {
         Territory territory = territoryRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("Territory","id",id));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Territory", "id", id));
         territory.setActive(false);
+        territoryRepository.save(territory);
     }
 }

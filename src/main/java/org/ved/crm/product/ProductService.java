@@ -29,9 +29,10 @@ public class ProductService {
                 .orElseThrow(()->new ResourceNotFoundException("Product","id",id));
     }
 
-    public List<ProductDto> getProductByCategory(String category){
-        return  productRepository.findByCategory(category)
-                .stream().map(productMapper::toDto)
+    public List<ProductDto> getProductsByCategory(String category) {
+        return productRepository.findByCategoryAndIsActiveTrue(category)
+                .stream()
+                .map(productMapper::toDto)
                 .toList();
     }
 
@@ -69,8 +70,9 @@ public class ProductService {
             product.setActive(request.isActive());
         }
 
-        Product saved = productRepository.save(product);
-        return productMapper.toDto(saved);
+        productRepository.save(product);
+        return productMapper.toDto(
+                productRepository.findById(id).orElseThrow());
     }
 
     @Transactional

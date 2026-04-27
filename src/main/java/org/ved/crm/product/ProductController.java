@@ -29,7 +29,7 @@ public class ProductController {
 
     @GetMapping("/category/{category}")
     public ResponseEntity<ApiResponse<List<ProductDto>>> getProductByCategory(@PathVariable String category){
-        return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully",productService.getProductByCategory(category)));
+        return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully",productService.getProductsByCategory(category)));
     }
 
     @PostMapping

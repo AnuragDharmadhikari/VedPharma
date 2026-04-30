@@ -90,11 +90,108 @@ public class InvoiceService {
             BigDecimal discountAmount = grossAmount
                     .multiply(orderItem.getDiscountPct())
                     .divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);
+
+            // Taxable amount = gross - discount — GST is calculated on this
+            BigDecimal taxableAmount = grossAmount
+                    .subtract(discountAmount)
+                    .setScale(2,RoundingMode.HALF_UP);
+
+            // Get numeric GST rate from the enum e.g. GST_12 → 12
+            BigDecimal gstRate = BigDecimal.valueOf(
+                    orderItem.getProduct().getGstRate().getRate()
+            );
+
+            BigDecimal cgstAmt = BigDecimal.ZERO;
+            BigDecimal sgstAmt = BigDecimal.ZERO;
+            BigDecimal igstAmt = BigDecimal.ZERO;
+
+            if (taxType == TaxType.CGST_SGST){
+                // Intra-state: divide GST rate by 2 for each component
+                // GST 12% → CGST 6% + SGST 6%
+                // We divide by 200 instead of dividing rate by 2 then by 100
+                cgstAmt = taxableAmount
+                        .multiply(gstRate)
+                        .divide(BigDecimal.valueOf(200),2,RoundingMode.HALF_UP);
+                sgstAmt=cgstAmt;
+            }else{
+                // Inter-state: full rate as IGST
+                // GST 12% → IGST 12%
+                igstAmt = taxableAmount
+                        .multiply(gstRate)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            }
+
+            // Line total = taxable + all taxes
+            BigDecimal lineTotal = taxableAmount
+                    .add(cgstAmt)
+                    .add(sgstAmt)
+                    .add(igstAmt)
+                    .setScale(2,RoundingMode.HALF_UP);
+
+            // Build line item — invoice field set to null for now
+            // We link it to the parent invoice in Step 8 below
+            InvoiceLineItem lineItem = InvoiceLineItem.builder()
+                    .product(orderItem.getProduct())
+                    .hsnCode(orderItem.getProduct().getHsnCode())
+                    .quantity(orderItem.getQuantity())
+                    .unitPrice(orderItem.getUnitPrice())
+                    .discountPct(orderItem.getDiscountPct())
+                    .taxableAmount(taxableAmount)
+                    .cgstAmt(cgstAmt)
+                    .sgstAmt(sgstAmt)
+                    .igstAmt(igstAmt)
+                    .lineTotal(lineTotal)
+                    .build();
+
+            lineItems.add(lineItem);
+
+            totalSubtotal = totalSubtotal.add(taxableAmount);
+            totalDiscount = totalDiscount.add(discountAmount);
+            totalCgst = totalCgst.add(cgstAmt);
+            totalSgst = totalSgst.add(sgstAmt);
+            totalIgst = totalIgst.add(igstAmt);
+            grandTotal = grandTotal.add(lineTotal);
+
         }
+        // Step 7 — Build the Invoice entity with all computed totals
+        Invoice invoice = Invoice.builder()
+                .order(order)
+                .rep(order.getRep())
+                .invoiceNumber(invoiceNumber)
+                .invoiceDate(LocalDate.now())
+                .taxType(taxType)
+                .subtotal(totalSubtotal.setScale(2,RoundingMode.HALF_UP))
+                .totalDiscount(totalDiscount.setScale(2, RoundingMode.HALF_UP))
+                .totalCgst(totalCgst.setScale(2, RoundingMode.HALF_UP))
+                .totalSgst(totalSgst.setScale(2,RoundingMode.HALF_UP))
+                .totalIgst(totalIgst.setScale(2, RoundingMode.HALF_UP))
+                .grandTotal(grandTotal.setScale(2, RoundingMode.HALF_UP))
+                .build();
+
+        // Step 8 — Link each line item back to the parent invoice
+        // This must happen after invoice is built to avoid circular reference
+
+        lineItems.forEach(item->item.setInvoice(invoice));
+        invoice.getLineItems().addAll(lineItems);
+
+        // Step 9 — Save invoice, cascade saves all line items automatically
+        // Re-fetch with JOIN FETCH so response has all relationships populated
+
+        Invoice saved = invoiceRepository.save(invoice);
+        return invoiceMapper.toDto(
+                invoiceRepository.findByIdWithDetails(saved.getId()).orElseThrow()
+        );
 
 
+    }
 
-
+    @Transactional
+    public InvoiceDto updateInvoiceStatus(UUID id, InvoiceStatus newStatus){
+        Invoice invoice = invoiceRepository.findByIdWithDetails(id)
+                .orElseThrow(()->new ResourceNotFoundException("Invoice","id",id));
+        invoice.setStatus(newStatus);
+        invoiceRepository.save(invoice);
+        return invoiceMapper.toDto(invoiceRepository.findByIdWithDetails(id).orElseThrow());
     }
 
 

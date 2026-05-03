@@ -46,7 +46,7 @@ public class Batch extends BaseAuditEntity {
     }
 
     public boolean isNearExpiry(){
-        return LocalDate.now().plusDays(90).isAfter(expiryDate)
+        return !LocalDate.now().plusDays(90).isBefore(expiryDate)
                 && !isExpired();
     }
 }

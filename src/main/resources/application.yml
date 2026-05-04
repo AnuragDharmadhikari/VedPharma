@@ -33,8 +33,3 @@ application:
 vedpharm:
   company:
     state: Maharashtra
-
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.springframework.web: DEBUG

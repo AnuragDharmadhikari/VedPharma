@@ -8,6 +8,7 @@ import org.ved.crm.chemist.ChemistRepository;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.product.Product;
 import org.ved.crm.product.ProductRepository;
+import org.ved.crm.scheme.SchemeService;
 import org.ved.crm.stockist.Stockist;
 import org.ved.crm.stockist.StockistRepository;
 import org.ved.crm.user.User;
@@ -30,6 +31,7 @@ public class OrderService {
     private final StockistRepository stockistRepository;
     private final ProductRepository productRepository;
     private final OrderMapper orderMapper;
+    private final SchemeService schemeService;
 
     public List<OrderDto> getAllOrders() {
         return orderRepository.findAllWithDetails()
@@ -119,11 +121,27 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
 
-        // Build items using helper
+        // Build items using helper — base pricing set at this point
         List<OrderItem> items = buildOrderItems(request.orderItems(), saved);
         saved.getOrderItems().addAll(items);
 
-        BigDecimal total = items.stream()
+// Persist order with items so each OrderItem gets a database ID.
+// SchemeApplication has a FK to order_item_id — items must be
+// persisted before applySchemes() fires or Hibernate throws
+// a transient entity exception.
+        orderRepository.save(saved);
+
+// Apply schemes to each item after they have persisted IDs.
+// applySchemes() checks buyer + product + today against active schemes.
+// If a scheme qualifies, it modifies the item in-place and saves
+// a SchemeApplication snapshot. If nothing qualifies, item unchanged.
+        saved.getOrderItems().forEach(item ->
+                schemeService.applySchemes(item, saved));
+
+// Recalculate total AFTER scheme application —
+// PERCENTAGE_DISCOUNT schemes reduce lineTotals,
+// so we must sum after adjustment not before.
+        BigDecimal total = saved.getOrderItems().stream()
                 .map(OrderItem::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 

@@ -161,6 +161,10 @@ public class InvoiceService {
                     .sgstAmt(sgstAmt)
                     .igstAmt(igstAmt)
                     .lineTotal(lineTotal)
+                    // Carry free units from order item so InventoryService
+                    // deducts quantity + freeQuantity from stock.
+                    // Zero when no QUANTITY_FREE scheme applied.
+                    .freeQuantity(orderItem.getFreeQuantity())
                     .build();
 
             lineItems.add(lineItem);

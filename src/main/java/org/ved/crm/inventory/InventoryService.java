@@ -222,7 +222,11 @@ public class InventoryService {
 
             UUID productId = lineItem.getProduct().getId();
             // How many units of this product need to be deducted
-            int remainingToDeduct = lineItem.getQuantity();
+            // Deduct ordered quantity PLUS free units from QUANTITY_FREE schemes.
+            // Free units are physical goods leaving the warehouse even though
+            // no revenue is recorded for them. freeQuantity defaults to 0
+            // when no scheme applied so this is always safe.
+            int remainingToDeduct = lineItem.getQuantity() + lineItem.getFreeQuantity();
 
             // Get all available batches for this product
             // ordered by expiry date ASC — oldest expiring first (FIFO)

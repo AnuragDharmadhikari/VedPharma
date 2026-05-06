@@ -35,4 +35,13 @@ public class OrderItem extends BaseAuditEntity {
 
     @Column(nullable = false,precision = 10,scale = 2)
     private BigDecimal lineTotal;
+
+    @Builder.Default
+    @Column(name = "scheme_discount_pct", precision = 5, scale = 2)
+    private BigDecimal schemeDiscountPct = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(name = "free_quantity")
+    private Integer freeQuantity = 0;
+
 }

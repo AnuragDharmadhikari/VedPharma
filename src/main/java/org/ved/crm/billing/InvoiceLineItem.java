@@ -50,4 +50,8 @@ public class InvoiceLineItem extends BaseAuditEntity {
 
     @Column(name = "line_total", nullable = false, precision = 10, scale = 2)
     private BigDecimal lineTotal;
+
+    @Builder.Default
+    @Column(name = "free_quantity")
+    private Integer freeQuantity = 0;
 }

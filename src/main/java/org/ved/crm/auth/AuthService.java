@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.audit.Audited;
 import org.ved.crm.security.JwtService;
+import org.ved.crm.security.LoginRateLimiter;
 import org.ved.crm.user.Role;
 import org.ved.crm.user.User;
 import org.ved.crm.user.UserRepository;
@@ -25,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final LoginRateLimiter loginRateLimiter;
 
     @Value("${application.jwt.expiration-ms}")
     private long expirationMs;
@@ -61,30 +63,51 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.email(),
-                        request.password()
-                )
-        );
 
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow();
+        // Step 1 — Check rate limit BEFORE attempting authentication
+        // Throws TooManyRequestsException if limit exceeded
+        loginRateLimiter.checkRateLimit(request.email());
 
-        if (!user.isActive()) {
-            throw new BadCredentialsException(
-                    "Account is deactivated. Please contact your administrator.");
+        try {
+            // Step 2 — Attempt authentication
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.email(),
+                            request.password()
+                    )
+            );
+
+            // Step 3 — Load user
+            User user = userRepository.findByEmail(request.email())
+                    .orElseThrow();
+
+            // Step 4 — Check if account is active
+            if (!user.isActive()) {
+                throw new BadCredentialsException(
+                        "Account is deactivated. Please contact your administrator.");
+            }
+
+            // Step 5 — Success — clear any previous failed attempts
+            loginRateLimiter.clearFailedAttempts(request.email());
+
+            var userDetails = org.springframework.security.core.userdetails
+                    .User.builder()
+                    .username(user.getEmail())
+                    .password(user.getPasswordHash())
+                    .roles(user.getRole().name())
+                    .build();
+
+            String token = jwtService.generateToken(userDetails);
+            return AuthResponse.of(token, expirationMs);
+
+        } catch (BadCredentialsException ex) {
+
+            // Step 6 — Failed authentication — record the attempt
+            // Only record for BadCredentialsException — wrong password
+            // Don't record for TooManyRequestsException — already rate limited
+            loginRateLimiter.recordFailedAttempt(request.email());
+            throw ex;
         }
-
-        var userDetails = org.springframework.security.core.userdetails
-                .User.builder()
-                .username(user.getEmail())
-                .password(user.getPasswordHash())
-                .roles(user.getRole().name())
-                .build();
-
-        String token = jwtService.generateToken(userDetails);
-        return AuthResponse.of(token, expirationMs);
     }
 
 }

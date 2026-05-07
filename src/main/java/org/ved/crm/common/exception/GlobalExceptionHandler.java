@@ -91,4 +91,10 @@ public class GlobalExceptionHandler {
         return ApiResponse.failure(
                 "Access denied. You do not have permission to perform this action.");
     }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public ApiResponse<Void> handleTooManyRequests(TooManyRequestsException ex) {
+        return ApiResponse.failure(ex.getMessage());
+    }
 }

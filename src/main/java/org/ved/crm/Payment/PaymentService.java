@@ -3,6 +3,7 @@ package org.ved.crm.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.billing.Invoice;
 import org.ved.crm.billing.InvoiceRepository;
 import org.ved.crm.billing.InvoiceStatus;
@@ -70,6 +71,7 @@ public class PaymentService {
     }
 
     // CREATE payment — the most complex method
+    @Audited(action = "PAYMENT_RECORDED", entityType = "Payment")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public PaymentDto createPayment(CreatePaymentRequest request){

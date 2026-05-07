@@ -4,6 +4,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.territory.Territory;
 import org.ved.crm.territory.TerritoryRepository;
@@ -119,6 +120,7 @@ public class DoctorService {
                 doctorRepository.findByIdWithDetails(id).orElseThrow());
     }
 
+    @Audited(action = "DOCTOR_DEACTIVATED", entityType = "Doctor")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public void deactivateDoctor(UUID id) {

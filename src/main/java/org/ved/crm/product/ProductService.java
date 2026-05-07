@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -101,6 +102,7 @@ public class ProductService {
                 productRepository.findById(id).orElseThrow());
     }
 
+    @Audited(action = "PRODUCT_DEACTIVATED", entityType = "Product")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void deactivateProduct(UUID id){

@@ -8,6 +8,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 
 import java.util.List;
@@ -101,6 +102,7 @@ public class UserService {
                 passwordEncoder.encode(request.newPassword()));
     }
 
+    @Audited(action = "USER_DEACTIVATED", entityType = "User")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public void deactivateUser(UUID id){

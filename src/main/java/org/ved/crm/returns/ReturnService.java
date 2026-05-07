@@ -5,6 +5,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.Payment.PaymentAllocationRepository;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.billing.Invoice;
 import org.ved.crm.billing.InvoiceRepository;
 import org.ved.crm.billing.InvoiceStatus;
@@ -192,6 +193,7 @@ public class ReturnService {
     // Raises credit note for full return value
     // ─────────────────────────────────────────────
 
+    @Audited(action = "RETURN_PROCESSED", entityType = "Return")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public ReturnDto processReturn(UUID returnId) {
@@ -289,6 +291,7 @@ public class ReturnService {
     // Marks return as rejected — no stock or financial changes
     // ─────────────────────────────────────────────
 
+    @Audited(action = "RETURN_REJECTED", entityType = "Return")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public ReturnDto rejectReturn(UUID returnId) {
@@ -316,6 +319,7 @@ public class ReturnService {
     // Updates invoice status based on true outstanding balance
     // ─────────────────────────────────────────────
 
+    @Audited(action = "CREDIT_NOTE_APPLIED", entityType = "CreditNote")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public CreditNoteDto applyCreditNote(UUID creditNoteId, UUID invoiceId) {

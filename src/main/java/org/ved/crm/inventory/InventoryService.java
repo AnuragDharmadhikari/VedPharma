@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.billing.Invoice;
 import org.ved.crm.billing.InvoiceLineItem;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -131,6 +132,7 @@ public class InventoryService {
     }
 
     // MANUAL stock adjustment — owner corrects discrepancies
+    @Audited(action = "STOCK_ADJUSTED", entityType = "Batch")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public BatchDto adjustStock(UUID batchId, AdjustStockRequest request){

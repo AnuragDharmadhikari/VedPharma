@@ -10,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.security.JwtService;
 import org.ved.crm.user.Role;
 import org.ved.crm.user.User;
@@ -28,6 +29,7 @@ public class AuthService {
     @Value("${application.jwt.expiration-ms}")
     private long expirationMs;
 
+    @Audited(action = "USER_REGISTERED", entityType = "User")
     @PreAuthorize("hasRole('OWNER')")
     @Transactional
     public AuthResponse register(RegisterRequest request) {

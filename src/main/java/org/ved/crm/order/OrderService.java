@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.chemist.ChemistRepository;
 import org.ved.crm.common.exception.ResourceNotFoundException;
@@ -190,6 +191,7 @@ public class OrderService {
                 orderRepository.findByIdWithDetails(id).orElseThrow());
     }
 
+    @Audited(action = "ORDER_STATUS_UPDATED", entityType = "Order")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public OrderDto updateOrderStatus(UUID id, OrderStatus status) {

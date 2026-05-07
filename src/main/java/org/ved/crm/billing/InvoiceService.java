@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.ved.crm.audit.Audited;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.inventory.InventoryService;
@@ -51,6 +52,7 @@ public class InvoiceService {
         return invoiceMapper.toDto(invoice);
     }
 
+    @Audited(action = "INVOICE_GENERATED", entityType = "Invoice")
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     @Transactional
     public InvoiceDto generateInvoice(UUID orderId) {

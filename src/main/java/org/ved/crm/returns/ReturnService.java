@@ -33,7 +33,6 @@ import java.util.UUID;
 public class ReturnService {
 
     private final ReturnRepository returnRepository;
-    private final ReturnItemRepository returnItemRepository;
     private final CreditNoteRepository creditNoteRepository;
     private final BatchRepository batchRepository;
     private final StockMovementRepository stockMovementRepository;

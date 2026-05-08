@@ -52,7 +52,8 @@ public class ReturnService {
     public List<ReturnDto> getAllReturns() {
         return returnRepository.findAllWithDetails()
                 .stream()
-                .map(returnMapper::toDto)
+                // No credit note context in list queries — pass null
+                .map(r -> returnMapper.toDto(r, null))
                 .toList();
     }
 
@@ -61,14 +62,16 @@ public class ReturnService {
         Return returnDoc = returnRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Return", "id", id));
-        return returnMapper.toDto(returnDoc);
+        // No credit note context in single fetch — pass null
+        return returnMapper.toDto(returnDoc, null);
     }
 
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'REP')")
     public List<ReturnDto> getReturnsByChemist(UUID chemistId) {
         return returnRepository.findByChemistId(chemistId)
                 .stream()
-                .map(returnMapper::toDto)
+                // No credit note context in list queries — pass null
+                .map(r -> returnMapper.toDto(r, null))
                 .toList();
     }
 
@@ -76,7 +79,8 @@ public class ReturnService {
     public List<ReturnDto> getReturnsByStockist(UUID stockistId) {
         return returnRepository.findByStockistId(stockistId)
                 .stream()
-                .map(returnMapper::toDto)
+                // No credit note context in list queries — pass null
+                .map(r -> returnMapper.toDto(r, null))
                 .toList();
     }
 
@@ -182,9 +186,11 @@ public class ReturnService {
         }
 
         // Step 6 — Save return — cascade saves all items automatically
+        // No credit note at creation time — return is still PENDING
         Return saved = returnRepository.save(returnDoc);
         return returnMapper.toDto(
-                returnRepository.findByIdWithDetails(saved.getId()).orElseThrow());
+                returnRepository.findByIdWithDetails(saved.getId()).orElseThrow(),
+                null);
     }
 
     // ─────────────────────────────────────────────
@@ -260,7 +266,7 @@ public class ReturnService {
             }
 
             // Credit accumulates for ALL returned items regardless of condition
-            // Chemist paid for these goods — they get credit back either way
+            // Stockist/chemist paid for these goods — they get credit back either way
             totalCreditAmount = totalCreditAmount.add(item.getLineTotal());
         }
 
@@ -280,10 +286,17 @@ public class ReturnService {
                 .amount(totalCreditAmount.setScale(2, RoundingMode.HALF_UP))
                 .build();
 
-        creditNoteRepository.save(creditNote);
+        CreditNote savedCreditNote = creditNoteRepository.save(creditNote);
+
+        // Step 6 — Re-fetch both return and credit note with all relationships
+        // Re-fetch is required to get correct updatedAt and all lazy relationships
+        // loaded for the mapper — same pattern used across all domains
+        CreditNote fetchedCreditNote = creditNoteRepository
+                .findByIdWithDetails(savedCreditNote.getId()).orElseThrow();
 
         return returnMapper.toDto(
-                returnRepository.findByIdWithDetails(returnId).orElseThrow());
+                returnRepository.findByIdWithDetails(returnId).orElseThrow(),
+                fetchedCreditNote);
     }
 
     // ─────────────────────────────────────────────
@@ -309,8 +322,10 @@ public class ReturnService {
         returnDoc.setStatus(ReturnStatus.REJECTED);
         returnRepository.save(returnDoc);
 
+        // No credit note on rejection — pass null
         return returnMapper.toDto(
-                returnRepository.findByIdWithDetails(returnId).orElseThrow());
+                returnRepository.findByIdWithDetails(returnId).orElseThrow(),
+                null);
     }
 
     // ─────────────────────────────────────────────
@@ -378,8 +393,6 @@ public class ReturnService {
         BigDecimal totalAlreadyPaid = paymentAllocationRepository
                 .getTotalAllocatedForInvoice(invoiceId);
 
-        // This includes the credit note we just applied above
-        // because we already called creditNoteRepository.save(creditNote) in Step 6
         BigDecimal totalAlreadyCredited = creditNoteRepository
                 .getTotalCreditAppliedForInvoice(invoiceId);
 

@@ -16,6 +16,7 @@ public record ReturnDto(
         String reason,
         ReturnStatus status,
         List<ReturnItemDto> returnItems,
+        CreditNoteDto creditNote,
         Instant createdAt,
         Instant updatedAt
 ) {

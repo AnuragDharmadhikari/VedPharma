@@ -1,11 +1,15 @@
 package org.ved.crm.returns;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class ReturnMapper {
 
-    public ReturnDto toDto(Return returnDoc){
+    private final CreditNoteMapper creditNoteMapper;
+
+    public ReturnDto toDto(Return returnDoc, CreditNote creditNote) {
         return new ReturnDto(
                 returnDoc.getId(),
                 returnDoc.getReturnNumber(),
@@ -19,12 +23,13 @@ public class ReturnMapper {
                 returnDoc.getReturnItems().stream()
                         .map(this::toReturnItemDto)
                         .toList(),
+                creditNote != null ? creditNoteMapper.toDto(creditNote) : null,
                 returnDoc.getCreatedAt(),
                 returnDoc.getUpdatedAt()
         );
     }
 
-    private ReturnItemDto toReturnItemDto(ReturnItem item){
+    private ReturnItemDto toReturnItemDto(ReturnItem item) {
         return new ReturnItemDto(
                 item.getId(),
                 item.getBatch().getId(),

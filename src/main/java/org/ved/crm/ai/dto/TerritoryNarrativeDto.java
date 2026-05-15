@@ -1,5 +1,7 @@
 package org.ved.crm.ai.dto;
 
+import java.io.Serializable;
+
 public record TerritoryNarrativeDto(
         String territoryId,
         String territoryName,
@@ -16,4 +18,4 @@ public record TerritoryNarrativeDto(
 
         String recommendations,
         String recommendationsMr
-) {}
+)implements Serializable {}

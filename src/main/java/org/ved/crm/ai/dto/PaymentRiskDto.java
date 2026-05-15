@@ -1,5 +1,6 @@
 package org.ved.crm.ai.dto;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 public record PaymentRiskDto(
@@ -15,4 +16,4 @@ public record PaymentRiskDto(
 
         String recommendedAction,
         String recommendedActionMr
-) {}
+)implements Serializable {}

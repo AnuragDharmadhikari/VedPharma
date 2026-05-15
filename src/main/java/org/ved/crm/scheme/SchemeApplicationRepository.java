@@ -32,4 +32,6 @@ public interface SchemeApplicationRepository extends JpaRepository<SchemeApplica
             WHERE sa.orderItem.order.id = :orderId
             """)
     List<SchemeApplication> findByOrderId(@Param("orderId") UUID orderId);
+
+    void deleteByOrderItemId(UUID orderItemId);
 }

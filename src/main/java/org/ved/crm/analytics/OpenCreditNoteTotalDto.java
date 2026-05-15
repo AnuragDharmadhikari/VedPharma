@@ -1,5 +1,6 @@
 package org.ved.crm.analytics;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 
 public record OpenCreditNoteTotalDto(
@@ -12,5 +13,5 @@ public record OpenCreditNoteTotalDto(
 
         BigDecimal chemistOpenValue
 
-) {
+) implements Serializable {
 }

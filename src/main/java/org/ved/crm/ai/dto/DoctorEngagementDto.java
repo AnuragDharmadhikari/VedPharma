@@ -1,5 +1,7 @@
 package org.ved.crm.ai.dto;
 
+import java.io.Serializable;
+
 public record DoctorEngagementDto(
         String doctorId,
         String doctorName,
@@ -15,4 +17,4 @@ public record DoctorEngagementDto(
         String recommendations,
         // Marathi recommendations
         String recommendationsMr
-) {}
+) implements Serializable {}

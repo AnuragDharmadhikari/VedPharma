@@ -1,5 +1,7 @@
 package org.ved.crm.ai.dto;
 
+import java.io.Serializable;
+
 public record OrderRecommendationDto(
         String chemistId,
         String chemistName,
@@ -14,4 +16,4 @@ public record OrderRecommendationDto(
         String applicableSchemesMr,
 
         String estimatedOrderValue
-) {}
+) implements Serializable {}

@@ -10,6 +10,7 @@ import org.ved.crm.chemist.ChemistRepository;
 import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.product.Product;
 import org.ved.crm.product.ProductRepository;
+import org.ved.crm.scheme.SchemeApplicationRepository;
 import org.ved.crm.scheme.SchemeService;
 import org.ved.crm.stockist.Stockist;
 import org.ved.crm.stockist.StockistRepository;
@@ -34,6 +35,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final OrderMapper orderMapper;
     private final SchemeService schemeService;
+    private final SchemeApplicationRepository schemeApplicationRepository;
 
     @PreAuthorize("hasAnyRole('OWNER', 'MANAGER')")
     public List<OrderDto> getAllOrders() {
@@ -170,6 +172,13 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new IllegalArgumentException("Only PENDING orders can be modified");
         }
+
+        // ── FIX: Delete SchemeApplications before clearing order items ──
+        // orphanRemoval on orderItems deletes the OrderItem rows,
+        // but SchemeApplication has a FK to order_items — must delete first
+        order.getOrderItems().forEach(item ->
+                schemeApplicationRepository.deleteByOrderItemId(item.getId())
+        );
 
         // Clear existing — orphanRemoval deletes from DB
         order.getOrderItems().clear();

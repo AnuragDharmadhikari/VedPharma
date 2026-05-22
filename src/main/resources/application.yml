@@ -7,8 +7,8 @@ spring:
 
   datasource:
     url: jdbc:postgresql://localhost:5432/vedpharm
-    username: ${DB_USERNAME:vedpharm_user}
-    password: ${DB_PASSWORD:vedpharm_pass}
+    username: ${DB_USERNAME:your-username-key-goes-in-application-local.yml}
+    password: ${DB_PASSWORD:your-password-key-goes-in-application-local.yml}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -43,9 +43,28 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: VedPharm CRM
+    version: 1.0.0
+    description: Pharmaceutical Sales Management Platform
+
 application:
   jwt:
-    secret: ${JWT_SECRET:SyPKjFZSlcrmHNcEb5/ZvGJo2RQFQFZK1eS33ugNN9A=}
+    secret: ${JWT_SECRET:your-secret-key-goes-in-application-local.yml}
     expiration-ms: 86400000
     refresh-expiration-ms: 604800000
 

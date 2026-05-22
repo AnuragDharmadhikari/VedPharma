@@ -1,0 +1,3 @@
+-- Baseline migration
+-- Schema already exists, created by Hibernate ddl-auto: update
+-- Flyway takes over from here for all future schema changes

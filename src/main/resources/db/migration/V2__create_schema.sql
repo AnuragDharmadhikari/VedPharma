@@ -170,25 +170,6 @@ CREATE TABLE public.doctors (
     CONSTRAINT doctors_tier_check CHECK (((tier)::text = ANY ((ARRAY['A'::character varying, 'B'::character varying, 'C'::character varying])::text[])))
 );
 
-
---
--- Name: flyway_schema_history; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.flyway_schema_history (
-    installed_rank integer NOT NULL,
-    version character varying(50),
-    description character varying(200) NOT NULL,
-    type character varying(20) NOT NULL,
-    script character varying(1000) NOT NULL,
-    checksum integer,
-    installed_by character varying(100) NOT NULL,
-    installed_on timestamp without time zone DEFAULT now() NOT NULL,
-    execution_time integer NOT NULL,
-    success boolean NOT NULL
-);
-
-
 --
 -- Name: invoice_line_items; Type: TABLE; Schema: public; Owner: -
 --
@@ -608,15 +589,6 @@ ALTER TABLE ONLY public.credit_notes
 ALTER TABLE ONLY public.doctors
     ADD CONSTRAINT doctors_pkey PRIMARY KEY (id);
 
-
---
--- Name: flyway_schema_history flyway_schema_history_pk; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.flyway_schema_history
-    ADD CONSTRAINT flyway_schema_history_pk PRIMARY KEY (installed_rank);
-
-
 --
 -- Name: invoice_line_items invoice_line_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
@@ -847,13 +819,6 @@ ALTER TABLE ONLY public.visit_products
 
 ALTER TABLE ONLY public.visits
     ADD CONSTRAINT visits_pkey PRIMARY KEY (id);
-
-
---
--- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
 
 
 --

@@ -1,0 +1,77 @@
+# ── VedPharm CI Pipeline ──────────────────────────────────────
+# Runs on every push to master and every pull request to master
+# Builds the application and runs all tests
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    # ── Service Containers ────────────────────────────────────
+    # GitHub Actions spins up these containers alongside the job
+    # They're available at localhost just like your local Docker setup
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: vedpharm
+          POSTGRES_USER: vedpharm_user
+          POSTGRES_PASSWORD: vedpharm_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+
+      # Step 1 — Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2 — Set up Java 21
+      # We use Java 21 LTS for CI — Java 25 is not yet available
+      # on GitHub Actions runners as a stable release
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Step 3 — Build and test
+      # Secrets are injected as environment variables
+      # These match exactly what application.yml expects
+      - name: Build with Maven
+        env:
+          DB_USERNAME: vedpharm_user
+          DB_PASSWORD: vedpharm_pass
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/vedpharm
+          SPRING_DATA_REDIS_HOST: localhost
+        run: mvn clean verify -B
+
+      # Step 4 — Upload test reports if tests fail
+      # This lets you download and read the Surefire XML reports
+      # directly from the GitHub Actions UI
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: target/surefire-reports/

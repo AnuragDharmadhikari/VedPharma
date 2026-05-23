@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ── Console Appender — JSON format for production-grade logging ── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <!-- Include MDC fields automatically — correlationId comes from here -->
+            <includeMdcKeyName>correlationId</includeMdcKeyName>
+
+            <!-- Rename default fields to cleaner names -->
+            <fieldNames>
+                <timestamp>timestamp</timestamp>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <level>level</level>
+            </fieldNames>
+
+            <!-- Shorten logger names — org.ved.crm.order.OrderService → OrderService -->
+            <shortenedLoggerNameLength>40</shortenedLoggerNameLength>
+        </encoder>
+    </appender>
+
+    <!-- ── Suppress noisy Spring Data Redis warnings ── -->
+    <logger name="org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport"
+            level="ERROR"/>
+
+    <!-- ── Root logger — INFO level, output to console ── -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

@@ -27,7 +27,7 @@ SET default_table_access_method = heap;
 -- Name: ai_interactions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.ai_interactions (
+CREATE TABLE IF NOT EXISTS public.ai_interactions (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE public.ai_interactions (
 -- Name: audit_log; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.audit_log (
+CREATE TABLE IF NOT EXISTS public.audit_log (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE public.audit_log (
 -- Name: batches; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.batches (
+CREATE TABLE IF NOT EXISTS public.batches (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE public.batches (
 -- Name: call_targets; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.call_targets (
+CREATE TABLE IF NOT EXISTS public.call_targets (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -101,7 +101,7 @@ CREATE TABLE public.call_targets (
 -- Name: chemists; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.chemists (
+CREATE TABLE IF NOT EXISTS public.chemists (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE public.chemists (
 -- Name: credit_note_number_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.credit_note_number_seq
+CREATE SEQUENCE IF NOT EXISTS public.credit_note_number_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -134,7 +134,7 @@ CREATE SEQUENCE public.credit_note_number_seq
 -- Name: credit_notes; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.credit_notes (
+CREATE TABLE IF NOT EXISTS public.credit_notes (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -153,7 +153,7 @@ CREATE TABLE public.credit_notes (
 -- Name: doctors; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.doctors (
+CREATE TABLE IF NOT EXISTS public.doctors (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE public.doctors (
 -- Name: invoice_line_items; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.invoice_line_items (
+CREATE TABLE IF NOT EXISTS public.invoice_line_items (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -197,7 +197,7 @@ CREATE TABLE public.invoice_line_items (
 -- Name: invoice_number_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.invoice_number_seq
+CREATE SEQUENCE IF NOT EXISTS public.invoice_number_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -209,7 +209,7 @@ CREATE SEQUENCE public.invoice_number_seq
 -- Name: invoices; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.invoices (
+CREATE TABLE IF NOT EXISTS public.invoices (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -238,7 +238,7 @@ CREATE TABLE public.invoices (
 -- Name: order_items; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.order_items (
+CREATE TABLE IF NOT EXISTS public.order_items (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -257,7 +257,7 @@ CREATE TABLE public.order_items (
 -- Name: orders; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.orders (
+CREATE TABLE IF NOT EXISTS public.orders (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -277,7 +277,7 @@ CREATE TABLE public.orders (
 -- Name: payment_allocations; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.payment_allocations (
+CREATE TABLE IF NOT EXISTS public.payment_allocations (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -291,7 +291,7 @@ CREATE TABLE public.payment_allocations (
 -- Name: payment_number_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.payment_number_seq
+CREATE SEQUENCE IF NOT EXISTS public.payment_number_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -303,7 +303,7 @@ CREATE SEQUENCE public.payment_number_seq
 -- Name: payments; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.payments (
+CREATE TABLE IF NOT EXISTS public.payments (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -323,7 +323,7 @@ CREATE TABLE public.payments (
 -- Name: products; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.products (
+CREATE TABLE IF NOT EXISTS public.products (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -343,7 +343,7 @@ CREATE TABLE public.products (
 -- Name: return_items; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.return_items (
+CREATE TABLE IF NOT EXISTS public.return_items (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -362,7 +362,7 @@ CREATE TABLE public.return_items (
 -- Name: return_number_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.return_number_seq
+CREATE SEQUENCE IF NOT EXISTS public.return_number_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -374,7 +374,7 @@ CREATE SEQUENCE public.return_number_seq
 -- Name: returns; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.returns (
+CREATE TABLE IF NOT EXISTS public.returns (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -392,7 +392,7 @@ CREATE TABLE public.returns (
 -- Name: scheme_applications; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.scheme_applications (
+CREATE TABLE IF NOT EXISTS public.scheme_applications (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -410,7 +410,7 @@ CREATE TABLE public.scheme_applications (
 -- Name: schemes; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.schemes (
+CREATE TABLE IF NOT EXISTS public.schemes (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -432,7 +432,7 @@ CREATE TABLE public.schemes (
 -- Name: stock_movements; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.stock_movements (
+CREATE TABLE IF NOT EXISTS public.stock_movements (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -450,7 +450,7 @@ CREATE TABLE public.stock_movements (
 -- Name: stockists; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.stockists (
+CREATE TABLE IF NOT EXISTS public.stockists (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -470,7 +470,7 @@ CREATE TABLE public.stockists (
 -- Name: territories; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.territories (
+CREATE TABLE IF NOT EXISTS public.territories (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -485,7 +485,7 @@ CREATE TABLE public.territories (
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.users (
+CREATE TABLE IF NOT EXISTS public.users (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -503,7 +503,7 @@ CREATE TABLE public.users (
 -- Name: visit_products; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.visit_products (
+CREATE TABLE IF NOT EXISTS public.visit_products (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,
@@ -520,7 +520,7 @@ CREATE TABLE public.visit_products (
 -- Name: visits; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.visits (
+CREATE TABLE IF NOT EXISTS public.visits (
     id uuid NOT NULL,
     created_at timestamp(6) with time zone NOT NULL,
     updated_at timestamp(6) with time zone NOT NULL,

@@ -54,8 +54,10 @@ jobs:
           cache: 'maven'
 
       # Step 3 — Build and test
-      # Secrets are injected as environment variables
-      # These match exactly what application.yml expects
+      # Spring Boot reads SPRING_* env vars directly — they override application.yml
+      # SPRING_DATASOURCE_URL overrides spring.datasource.url
+      # SPRING_DATASOURCE_USERNAME overrides spring.datasource.username
+      # This is Spring's relaxed binding for environment variables
       - name: Build with Maven
         env:
           DB_USERNAME: vedpharm_user
@@ -63,7 +65,11 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/vedpharm
+          SPRING_DATASOURCE_USERNAME: vedpharm_user
+          SPRING_DATASOURCE_PASSWORD: vedpharm_pass
           SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
+          SPRING_FLYWAY_ENABLED: true
         run: mvn clean verify -B
 
       # Step 4 — Upload test reports if tests fail

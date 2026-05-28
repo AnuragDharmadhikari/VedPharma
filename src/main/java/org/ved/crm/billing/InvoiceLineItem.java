@@ -6,6 +6,7 @@ import org.ved.crm.common.audit.BaseAuditEntity;
 import org.ved.crm.product.Product;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "invoice_line_items")
@@ -54,4 +55,16 @@ public class InvoiceLineItem extends BaseAuditEntity {
     @Builder.Default
     @Column(name = "free_quantity")
     private Integer freeQuantity = 0;
+
+    // Batch number from which this quantity was deducted
+    // Nullable — existing invoices don't have this info
+    // Always populated for new invoices after this feature
+    @Column(name = "batch_number")
+    private String batchNumber;
+
+    // Expiry date of the batch — required on pharma GST invoices
+    // Nullable — same reason as batchNumber
+    @Column(name = "expiry_date")
+    private LocalDate expiryDate;
+
 }

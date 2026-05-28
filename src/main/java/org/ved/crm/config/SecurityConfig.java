@@ -51,11 +51,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(requestHandler)
-                        .ignoringRequestMatchers(
-                                "/api/v1/auth/login",
-                                "/api/v1/auth/logout",
+                        .ignoringRequestMatchers("/api/v1/**",
                                 "/actuator/health",
-                                "/api/v1/auth/refresh",
                                 "/actuator/info",
                                 "/actuator/prometheus"
                         )
@@ -92,8 +89,7 @@ public class SecurityConfig {
         config.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
-                "Accept",
-                "X-XSRF-TOKEN"
+                "Accept"
         ));
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);

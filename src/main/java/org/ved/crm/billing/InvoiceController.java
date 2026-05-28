@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.ved.crm.common.ApiResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +17,7 @@ import java.util.UUID;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+    private final InvoicePdfService invoicePdfService;
 
     // GET all invoices
     @GetMapping
@@ -57,4 +60,26 @@ public class InvoiceController {
                 "Outstanding invoices retrieved",
                 invoiceService.getOutstandingInvoices()));
     }
+
+    // GET PDF — streams the invoice as a downloadable PDF file
+    // Returns application/pdf with Content-Disposition header
+    // so browser either downloads or opens it in a PDF viewer
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getInvoicePdf(@PathVariable UUID id) {
+
+        byte[] pdfBytes = invoicePdfService.generatePdf(id);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        // inline → browser opens PDF viewer
+        // attachment → browser downloads the file
+        headers.setContentDispositionFormData("inline",
+                "invoice-" + id + ".pdf");
+        headers.setContentLength(pdfBytes.length);
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(pdfBytes);
+    }
+
 }

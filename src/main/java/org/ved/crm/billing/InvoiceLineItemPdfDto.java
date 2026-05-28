@@ -2,22 +2,23 @@ package org.ved.crm.billing;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.UUID;
 
-public record InvoiceLineItemDto(
-        UUID id,
-        UUID productId,
+// Internal DTO for PDF generation only
+// Includes MRP and GST rate from product — not in standard InvoiceLineItemDto
+record InvoiceLineItemPdfDto(
         String productName,
         String hsnCode,
+        BigDecimal mrp,
         Integer quantity,
+        Integer freeQuantity,
         BigDecimal unitPrice,
         BigDecimal discountPct,
         BigDecimal taxableAmount,
         BigDecimal cgstAmt,
         BigDecimal sgstAmt,
         BigDecimal igstAmt,
-        Integer freeQuantity,
         BigDecimal lineTotal,
         String batchNumber,
-        LocalDate expiryDate
+        LocalDate expiryDate,
+        int gstRate
 ) {}

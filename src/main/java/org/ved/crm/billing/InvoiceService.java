@@ -74,9 +74,7 @@ public class InvoiceService {
                     "Invoice already exists for this order");
         }
 
-        // Step 4 — Determine who is billed and which state to use for tax
-        // VIA_STOCKIST → invoice goes to Stockist → tax based on stockist state
-        // DIRECT → invoice goes to Chemist → tax based on chemist state
+        // Step 4 — Determine who is billed and billing state
         Chemist chemist = order.getChemist();
         Stockist stockist = order.getStockist();
 
@@ -85,11 +83,9 @@ public class InvoiceService {
 
         if (order.getFulfillmentType() == FulfillmentType.VIA_STOCKIST) {
             billedTo = BilledTo.STOCKIST;
-            // Stockist is guaranteed non-null for VIA_STOCKIST orders
             billingState = stockist.getState();
         } else {
             billedTo = BilledTo.CHEMIST;
-            // Direct sale — bill to chemist, use chemist state for tax
             billingState = chemist.getState();
         }
 
@@ -101,95 +97,9 @@ public class InvoiceService {
         // Step 6 — Generate sequential invoice number
         String invoiceNumber = generateInvoiceNumber();
 
-        // Step 7 — Process each order item and calculate taxes
-        List<InvoiceLineItem> lineItems = new ArrayList<>();
-        BigDecimal totalSubtotal = BigDecimal.ZERO;
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-        BigDecimal totalCgst = BigDecimal.ZERO;
-        BigDecimal totalSgst = BigDecimal.ZERO;
-        BigDecimal totalIgst = BigDecimal.ZERO;
-        BigDecimal grandTotal = BigDecimal.ZERO;
-
-        for (OrderItem orderItem : order.getOrderItems()) {
-
-            // Gross = unitPrice × quantity
-            BigDecimal grossAmount = orderItem.getUnitPrice()
-                    .multiply(BigDecimal.valueOf(orderItem.getQuantity()))
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            // Total effective discount = base discount + scheme discount.
-            // schemeDiscountPct defaults to ZERO when no scheme applied — always safe.
-            // PERCENTAGE_DISCOUNT schemes stack on top of base discount.
-            BigDecimal totalDiscountPct = orderItem.getDiscountPct()
-                    .add(orderItem.getSchemeDiscountPct());
-
-            BigDecimal discountAmount = grossAmount
-                    .multiply(totalDiscountPct)
-                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-
-            // Taxable amount — GST calculated on this
-            BigDecimal taxableAmount = grossAmount
-                    .subtract(discountAmount)
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            // Numeric GST rate from enum e.g. GST_12 → 12
-            BigDecimal gstRate = BigDecimal.valueOf(
-                    orderItem.getProduct().getGstRate().getRate());
-
-            BigDecimal cgstAmt = BigDecimal.ZERO;
-            BigDecimal sgstAmt = BigDecimal.ZERO;
-            BigDecimal igstAmt = BigDecimal.ZERO;
-
-            if (taxType == TaxType.CGST_SGST) {
-                // Intra-state: GST split equally — divide by 200
-                cgstAmt = taxableAmount
-                        .multiply(gstRate)
-                        .divide(BigDecimal.valueOf(200), 2, RoundingMode.HALF_UP);
-                sgstAmt = cgstAmt;
-            } else {
-                // Inter-state: full rate as IGST — divide by 100
-                igstAmt = taxableAmount
-                        .multiply(gstRate)
-                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            }
-
-            // Line total = taxable + all taxes
-            BigDecimal lineTotal = taxableAmount
-                    .add(cgstAmt)
-                    .add(sgstAmt)
-                    .add(igstAmt)
-                    .setScale(2, RoundingMode.HALF_UP);
-
-            // Build line item — invoice linked after parent invoice is built
-            InvoiceLineItem lineItem = InvoiceLineItem.builder()
-                    .product(orderItem.getProduct())
-                    .hsnCode(orderItem.getProduct().getHsnCode())
-                    .quantity(orderItem.getQuantity())
-                    .unitPrice(orderItem.getUnitPrice())
-                    .discountPct(totalDiscountPct)
-                    .taxableAmount(taxableAmount)
-                    .cgstAmt(cgstAmt)
-                    .sgstAmt(sgstAmt)
-                    .igstAmt(igstAmt)
-                    .lineTotal(lineTotal)
-                    // Carry free units from order item so InventoryService
-                    // deducts quantity + freeQuantity from stock.
-                    // Zero when no QUANTITY_FREE scheme applied.
-                    .freeQuantity(orderItem.getFreeQuantity())
-                    .build();
-
-            lineItems.add(lineItem);
-
-            // Accumulate invoice totals
-            totalSubtotal = totalSubtotal.add(taxableAmount);
-            totalDiscount = totalDiscount.add(discountAmount);
-            totalCgst = totalCgst.add(cgstAmt);
-            totalSgst = totalSgst.add(sgstAmt);
-            totalIgst = totalIgst.add(igstAmt);
-            grandTotal = grandTotal.add(lineTotal);
-        }
-
-        // Step 8 — Build Invoice entity
+        // Step 7 — Build Invoice with ZERO totals and empty line items
+        // Totals will be recalculated after InventoryService creates
+        // the batch-split line items
         Invoice invoice = Invoice.builder()
                 .order(order)
                 .rep(order.getRep())
@@ -199,26 +109,73 @@ public class InvoiceService {
                 .invoiceNumber(invoiceNumber)
                 .invoiceDate(LocalDate.now())
                 .taxType(taxType)
-                .subtotal(totalSubtotal.setScale(2, RoundingMode.HALF_UP))
-                .totalDiscount(totalDiscount.setScale(2, RoundingMode.HALF_UP))
-                .totalCgst(totalCgst.setScale(2, RoundingMode.HALF_UP))
-                .totalSgst(totalSgst.setScale(2, RoundingMode.HALF_UP))
-                .totalIgst(totalIgst.setScale(2, RoundingMode.HALF_UP))
-                .grandTotal(grandTotal.setScale(2, RoundingMode.HALF_UP))
+                .subtotal(BigDecimal.ZERO)
+                .totalDiscount(BigDecimal.ZERO)
+                .totalCgst(BigDecimal.ZERO)
+                .totalSgst(BigDecimal.ZERO)
+                .totalIgst(BigDecimal.ZERO)
+                .grandTotal(BigDecimal.ZERO)
                 .build();
 
-        // Step 9 — Link line items to invoice
-        lineItems.forEach(item -> item.setInvoice(invoice));
-        invoice.getLineItems().addAll(lineItems);
-
-        // Step 10 — Save and re-fetch for complete response
+        // Step 8 — Save invoice first to get an ID
+        // InventoryService needs the invoice ID for StockMovement referenceId
         Invoice saved = invoiceRepository.save(invoice);
 
-        // Step 11 — Deduct stock for all line items in this invoice
-        // FIFO by expiry — oldest expiring batch deducted first
-        // If insufficient stock, this throws IllegalArgumentException
-        // and the entire transaction rolls back — invoice is NOT saved
-        inventoryService.deductStockForInvoice(saved);
+        // Step 9 — Deduct stock FIFO and create batch-split line items
+        // Each batch used gets its own InvoiceLineItem with full GST calculation
+        // This is the core of our batch traceability feature
+        List<InvoiceLineItem> lineItems =
+                inventoryService.deductStockAndCreateLineItems(
+                        saved,
+                        order.getOrderItems(),
+                        taxType);
+
+        // Step 10 — Link line items to invoice
+        lineItems.forEach(item -> item.setInvoice(saved));
+        saved.getLineItems().addAll(lineItems);
+
+        // Step 11 — Recalculate invoice totals from actual line items
+        // We do this here instead of in InventoryService to keep
+        // financial calculations in the billing domain
+        BigDecimal totalSubtotal  = BigDecimal.ZERO;
+        BigDecimal totalDiscount  = BigDecimal.ZERO;
+        BigDecimal totalCgst      = BigDecimal.ZERO;
+        BigDecimal totalSgst      = BigDecimal.ZERO;
+        BigDecimal totalIgst      = BigDecimal.ZERO;
+        BigDecimal grandTotal     = BigDecimal.ZERO;
+
+        for (InvoiceLineItem item : lineItems) {
+            totalSubtotal = totalSubtotal.add(item.getTaxableAmount());
+            totalCgst     = totalCgst.add(item.getCgstAmt());
+            totalSgst     = totalSgst.add(item.getSgstAmt());
+            totalIgst     = totalIgst.add(item.getIgstAmt());
+            grandTotal    = grandTotal.add(item.getLineTotal());
+        }
+
+        // Recalculate total discount from order items
+        // (discount was applied per order item, not per batch line item)
+        for (org.ved.crm.order.OrderItem orderItem : order.getOrderItems()) {
+            BigDecimal grossAmount = orderItem.getUnitPrice()
+                    .multiply(BigDecimal.valueOf(orderItem.getQuantity()))
+                    .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal totalDiscountPct = orderItem.getDiscountPct()
+                    .add(orderItem.getSchemeDiscountPct());
+            BigDecimal discountAmount = grossAmount
+                    .multiply(totalDiscountPct)
+                    .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            totalDiscount = totalDiscount.add(discountAmount);
+        }
+
+        // Step 12 — Update invoice with calculated totals
+        saved.setSubtotal(totalSubtotal.setScale(2, RoundingMode.HALF_UP));
+        saved.setTotalDiscount(totalDiscount.setScale(2, RoundingMode.HALF_UP));
+        saved.setTotalCgst(totalCgst.setScale(2, RoundingMode.HALF_UP));
+        saved.setTotalSgst(totalSgst.setScale(2, RoundingMode.HALF_UP));
+        saved.setTotalIgst(totalIgst.setScale(2, RoundingMode.HALF_UP));
+        saved.setGrandTotal(grandTotal.setScale(2, RoundingMode.HALF_UP));
+
+        // Step 13 — Save everything and re-fetch for complete response
+        invoiceRepository.save(saved);
 
         return invoiceMapper.toDto(
                 invoiceRepository.findByIdWithDetails(saved.getId()).orElseThrow()

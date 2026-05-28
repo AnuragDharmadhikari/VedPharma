@@ -12,7 +12,9 @@ import org.ved.crm.common.exception.ResourceNotFoundException;
 import org.ved.crm.product.Product;
 import org.ved.crm.product.ProductRepository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -221,69 +223,145 @@ public class InventoryService {
     // NOT exposed via controller
     // ─────────────────────────────────────────────
 
-    // Called by InvoiceService after saving an invoice
-    // Deducts stock for every line item in the invoice
-    // Uses FIFO by expiry — oldest expiring batch deducted first
+    // Called by InvoiceService after saving an empty invoice
+    // For each OrderItem, deducts stock FIFO by expiry
+    // Creates ONE InvoiceLineItem PER BATCH used
+    // This gives full batch traceability on the invoice itself
+    // Returns all created line items — InvoiceService adds them to invoice
     @Transactional
-    public void deductStockForInvoice(Invoice invoice){
-        // Loop through every line item in the invoice
-        // Each line item is one product with a quantity
-        for(InvoiceLineItem lineItem : invoice.getLineItems()){
+    public List<InvoiceLineItem> deductStockAndCreateLineItems(
+            Invoice invoice,
+            List<org.ved.crm.order.OrderItem> orderItems,
+            org.ved.crm.billing.TaxType taxType) {
 
-            UUID productId = lineItem.getProduct().getId();
-            // How many units of this product need to be deducted
-            // Deduct ordered quantity PLUS free units from QUANTITY_FREE schemes.
-            // Free units are physical goods leaving the warehouse even though
-            // no revenue is recorded for them. freeQuantity defaults to 0
-            // when no scheme applied so this is always safe.
-            int remainingToDeduct = lineItem.getQuantity() + lineItem.getFreeQuantity();
+        List<InvoiceLineItem> allLineItems = new ArrayList<>();
 
-            // Get all available batches for this product
-            // ordered by expiry date ASC — oldest expiring first (FIFO)
-            // Only batches with currentQuantity > 0 are returned
-            List<Batch> availableBatches = batchRepository.findAvailableBatchesByProduct(productId);
+        for (org.ved.crm.order.OrderItem orderItem : orderItems) {
 
-            // Step 1 — Filter out expired batches
-            // We never sell from expired batches
+            UUID productId = orderItem.getProduct().getId();
+
+            // Total units to deduct = ordered qty + free qty from schemes
+            int remainingToDeduct = orderItem.getQuantity()
+                    + orderItem.getFreeQuantity();
+
+            // Get available batches FIFO by expiry date
+            List<Batch> availableBatches =
+                    batchRepository.findAvailableBatchesByProduct(productId);
+
+            // Filter expired batches — never sell expired stock
             List<Batch> validBatches = availableBatches.stream()
-                    .filter(b->!b.isExpired())
+                    .filter(b -> !b.isExpired())
                     .toList();
 
-            // Step 2 — Calculate total available stock across all valid batches
+            // Validate total available stock
             int totalAvailable = validBatches.stream()
                     .mapToInt(Batch::getCurrentQuantity)
                     .sum();
 
-            // Step 3 — Check if we have enough stock
-            // If not, throw exception — transaction will rollback
-            // Invoice will NOT be saved
-            if(totalAvailable < remainingToDeduct){
+            if (totalAvailable < remainingToDeduct) {
                 throw new IllegalArgumentException(
                         "Insufficient stock for product: "
-                                + lineItem.getProduct().getName()
+                                + orderItem.getProduct().getName()
                                 + ". Required: " + remainingToDeduct
                                 + ", Available: " + totalAvailable);
             }
 
-            // Step 4 — Deduct from batches FIFO by expiry
-            // We loop through batches oldest-expiry-first
-            // and deduct as much as possible from each
+            // Track how many free units we still need to assign
+            // Free units from QUANTITY_FREE schemes are distributed
+            // proportionally across batches
+            int remainingFreeToAssign = orderItem.getFreeQuantity();
 
-            for(Batch batch : validBatches){
+            // ── Deduct from batches FIFO ──────────────────────
+            for (Batch batch : validBatches) {
 
-                // If we've deducted everything we need, stop
-                if(remainingToDeduct == 0 ) break;
+                if (remainingToDeduct == 0) break;
 
-                // How much can we take from this batch?
-                // Either the full remaining amount needed
-                // or everything in this batch — whichever is smaller
-                int deductFromThisBatch = Math.min(remainingToDeduct,batch.getCurrentQuantity());
+                // Units to take from this batch
+                int deductFromThisBatch = Math.min(
+                        remainingToDeduct,
+                        batch.getCurrentQuantity());
 
-                batch.setCurrentQuantity(batch.getCurrentQuantity()-deductFromThisBatch);
+                // How many of these are free units?
+                // Take free units from this batch proportionally
+                int freeFromThisBatch = Math.min(
+                        remainingFreeToAssign,
+                        deductFromThisBatch);
+
+                // Paid units from this batch
+                int paidFromThisBatch = deductFromThisBatch - freeFromThisBatch;
+
+                // ── Calculate GST for this batch's quantity ────
+                // Only paid units are taxable — free units have no revenue
+                BigDecimal grossAmount = orderItem.getUnitPrice()
+                        .multiply(BigDecimal.valueOf(paidFromThisBatch))
+                        .setScale(2, java.math.RoundingMode.HALF_UP);
+
+                // Total discount = base discount + scheme discount
+                BigDecimal totalDiscountPct = orderItem.getDiscountPct()
+                        .add(orderItem.getSchemeDiscountPct());
+
+                BigDecimal discountAmount = grossAmount
+                        .multiply(totalDiscountPct)
+                        .divide(BigDecimal.valueOf(100), 2,
+                                java.math.RoundingMode.HALF_UP);
+
+                BigDecimal taxableAmount = grossAmount
+                        .subtract(discountAmount)
+                        .setScale(2, java.math.RoundingMode.HALF_UP);
+
+                BigDecimal gstRate = BigDecimal.valueOf(
+                        orderItem.getProduct().getGstRate().getRate());
+
+                BigDecimal cgstAmt = BigDecimal.ZERO;
+                BigDecimal sgstAmt = BigDecimal.ZERO;
+                BigDecimal igstAmt = BigDecimal.ZERO;
+
+                if (taxType == org.ved.crm.billing.TaxType.CGST_SGST) {
+                    cgstAmt = taxableAmount
+                            .multiply(gstRate)
+                            .divide(BigDecimal.valueOf(200), 2,
+                                    java.math.RoundingMode.HALF_UP);
+                    sgstAmt = cgstAmt;
+                } else {
+                    igstAmt = taxableAmount
+                            .multiply(gstRate)
+                            .divide(BigDecimal.valueOf(100), 2,
+                                    java.math.RoundingMode.HALF_UP);
+                }
+
+                BigDecimal lineTotal = taxableAmount
+                        .add(cgstAmt)
+                        .add(sgstAmt)
+                        .add(igstAmt)
+                        .setScale(2, java.math.RoundingMode.HALF_UP);
+
+                // ── Create InvoiceLineItem for this batch ──────
+                InvoiceLineItem lineItem = InvoiceLineItem.builder()
+                        .invoice(invoice)
+                        .product(orderItem.getProduct())
+                        .hsnCode(orderItem.getProduct().getHsnCode())
+                        .quantity(paidFromThisBatch)
+                        .freeQuantity(freeFromThisBatch)
+                        .unitPrice(orderItem.getUnitPrice())
+                        .discountPct(totalDiscountPct)
+                        .taxableAmount(taxableAmount)
+                        .cgstAmt(cgstAmt)
+                        .sgstAmt(sgstAmt)
+                        .igstAmt(igstAmt)
+                        .lineTotal(lineTotal)
+                        // ── Batch info — the key addition ─────
+                        .batchNumber(batch.getBatchNumber())
+                        .expiryDate(batch.getExpiryDate())
+                        .build();
+
+                allLineItems.add(lineItem);
+
+                // ── Deduct stock from batch ────────────────────
+                batch.setCurrentQuantity(
+                        batch.getCurrentQuantity() - deductFromThisBatch);
                 batchRepository.save(batch);
 
-                // Record the SALE movement for this batch
-                // quantity is negative — stock going OUT
+                // ── Record StockMovement ───────────────────────
                 StockMovement saleMovement = StockMovement.builder()
                         .batch(batch)
                         .movementType(MovementType.SALE)
@@ -291,19 +369,19 @@ public class InventoryService {
                         .referenceId(invoice.getId())
                         .referenceType("INVOICE")
                         .notes("Stock deducted for invoice: "
-                                + invoice.getInvoiceNumber())
+                                + invoice.getInvoiceNumber()
+                                + " (Batch: " + batch.getBatchNumber() + ")")
                         .build();
 
                 stockMovementRepository.save(saleMovement);
 
-                // Reduce the remaining amount we still need to deduct
                 remainingToDeduct -= deductFromThisBatch;
+                remainingFreeToAssign -= freeFromThisBatch;
             }
-            // After this loop, remainingToDeduct will be 0
-            // because we verified totalAvailable >= required in Step 3
         }
-    }
 
+        return allLineItems;
+    }
     // Called by VisitService when rep logs samples given to a doctor
     // Deducts from specified batch directly — rep chooses which batch
     @Transactional

@@ -55,7 +55,9 @@ public class InvoiceMapper {
                 item.getSgstAmt(),
                 item.getIgstAmt(),
                 item.getFreeQuantity(),
-                item.getLineTotal()
+                item.getLineTotal(),
+                item.getBatchNumber(),
+                item.getExpiryDate()
         );
     }
 }

@@ -79,6 +79,7 @@ public class ChemistService {
                 .city(request.city())
                 .address(request.address())
                 .phone(request.phone())
+                .email(request.email())
                 .build();
 
         Chemist saved = chemistRepository.save(chemist);
@@ -133,6 +134,7 @@ public class ChemistService {
         chemist.setCity(request.city());
         chemist.setAddress(request.address());
         chemist.setPhone(request.phone());
+        chemist.setEmail(request.email());
 
         if(request.isActive() != null){
             chemist.setActive(request.isActive());

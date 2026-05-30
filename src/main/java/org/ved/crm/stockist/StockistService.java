@@ -67,6 +67,7 @@ public class StockistService {
                 .city(request.city())
                 .address(request.address())
                 .phone(request.phone())
+                .email(request.email())
                 .build();
 
         stockistRepository.save(stockist);
@@ -110,6 +111,7 @@ public class StockistService {
         stockist.setCity(request.city());
         stockist.setAddress(request.address());
         stockist.setPhone(request.phone());
+        stockist.setEmail(request.email());
 
         if(request.isActive()!=null){
             stockist.setActive(request.isActive());

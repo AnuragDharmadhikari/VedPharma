@@ -1,5 +1,6 @@
 package org.ved.crm.chemist;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -37,7 +38,8 @@ public record UpdateChemistRequest(
         @NotBlank
         String phone,
 
-        // Allows reactivation via PUT — same pattern as Doctor and Stockist
+        @Email(message = "Invalid email format")
+        String email,
+
         Boolean isActive
-) {
-}
+) {}

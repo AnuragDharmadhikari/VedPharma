@@ -18,6 +18,7 @@ public class ChemistMapper {
                 chemist.getCity(),
                 chemist.getAddress(),
                 chemist.getPhone(),
+                chemist.getEmail(),
                 chemist.isActive(),
                 chemist.getCreatedAt(),
                 chemist.getUpdatedAt()

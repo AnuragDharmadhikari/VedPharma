@@ -5,6 +5,19 @@ spring:
   profiles:
     active: local
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:akunarlc9@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password-here}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
   datasource:
     url: jdbc:postgresql://localhost:5432/vedpharm
     username: ${DB_USERNAME:your-username-key-goes-in-application-local.yml}
@@ -90,3 +103,5 @@ openai:
 logging:
   level:
     org.springframework.data.repository.config.RepositoryConfigurationExtensisupport: ERROR
+    org.ved.crm.billing: DEBUG
+    org.ved.crm.email: DEBUG

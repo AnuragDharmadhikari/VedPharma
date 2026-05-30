@@ -16,6 +16,7 @@ public class StockistMapper {
                 stockist.getCity(),
                 stockist.getAddress(),
                 stockist.getPhone(),
+                stockist.getEmail(),
                 stockist.isActive(),
                 stockist.getCreatedAt(),
                 stockist.getUpdatedAt()

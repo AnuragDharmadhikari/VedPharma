@@ -24,6 +24,9 @@ public class Chemist extends BaseAuditEntity {
     @Column(name = "owner_name",nullable = false)
     private String ownerName;
 
+    @Column(name = "email")
+    private String email;
+
     // Drug License Number — legal requirement for every retail pharmacy in India
     // Must be unique — no two chemists can have the same DL number
     @Column(name = "drug_license_number",nullable = false,unique = true)

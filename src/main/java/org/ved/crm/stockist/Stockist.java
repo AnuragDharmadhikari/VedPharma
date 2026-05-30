@@ -27,6 +27,9 @@ public class Stockist extends BaseAuditEntity {
     @Column(nullable = false)
     private String ownerName;
 
+    @Column(name = "email")
+    private String email;
+
     @Column(unique = true)
     private String gstin;
 

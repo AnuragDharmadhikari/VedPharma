@@ -1,6 +1,7 @@
 package org.ved.crm.billing;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.ved.crm.audit.Audited;
 import org.ved.crm.chemist.Chemist;
 import org.ved.crm.common.exception.ResourceNotFoundException;
+import org.ved.crm.email.EmailService;
 import org.ved.crm.inventory.InventoryService;
 import org.ved.crm.order.Order;
 import org.ved.crm.order.OrderItem;
@@ -23,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -32,6 +35,7 @@ public class InvoiceService {
     private final OrderRepository orderRepository;
     private final InvoiceMapper invoiceMapper;
     private final InventoryService inventoryService;
+    private final EmailService emailService;
 
     @Value("${vedpharm.company.state}")
     private String companyState;
@@ -176,6 +180,22 @@ public class InvoiceService {
 
         // Step 13 — Save everything and re-fetch for complete response
         invoiceRepository.save(saved);
+
+        // ── Send invoice email async ───────────────────────────
+        // Runs in background thread — never blocks invoice generation
+        // Skips silently if buyer email is missing
+        String buyerEmail;
+        String buyerName;
+
+        if (saved.getBilledTo() == BilledTo.STOCKIST && saved.getStockist() != null) {
+            buyerEmail = saved.getStockist().getEmail();
+            buyerName  = saved.getStockist().getFirmName();
+        } else {
+            buyerEmail = saved.getChemist().getEmail();
+            buyerName  = saved.getChemist().getFirmName();
+        }
+
+        emailService.sendInvoiceEmail(saved.getId(), buyerEmail, buyerName);
 
         return invoiceMapper.toDto(
                 invoiceRepository.findByIdWithDetails(saved.getId()).orElseThrow()

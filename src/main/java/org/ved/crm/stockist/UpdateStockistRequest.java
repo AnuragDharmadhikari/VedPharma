@@ -1,5 +1,6 @@
 package org.ved.crm.stockist;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -17,5 +18,6 @@ public record UpdateStockistRequest(
         @NotBlank String city,
         String address,
         @NotBlank String phone,
+        @Email(message = "Invalid email format") String email,
         Boolean isActive
 ) {}

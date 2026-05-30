@@ -15,8 +15,8 @@ public record ChemistDto(
         String city,
         String address,
         String phone,
+        String email,
         boolean isActive,
         Instant createdAt,
         Instant updatedAt
-) {
-}
+) {}
